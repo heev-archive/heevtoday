@@ -606,9 +606,6 @@ const disc=document.getElementById('bgm-disc');
 const btn=document.getElementById('bgm-btn');
 const icon=document.getElementById('bgm-icon');
 btn.addEventListener('click',()=>{
-  if(!audio.src || audio.src===window.location.href){
-    alert('BGM 파일을 bgm-audio의 src에 연결해 주세요!'); return;
-  }
   if(bgmPlaying){
     audio.pause(); disc.classList.remove('spinning');
     icon.textContent='▶';
