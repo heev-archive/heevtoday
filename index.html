@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>heevtoday</title>
+<!-- 🍧 파비콘 - 흐렸다 밝아지는 효과는 JS로 처리 -->
+<link id="favicon" rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍏</text></svg>">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.383.0/umd/lucide.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg-color:#FFFFFF;
+  --white:#ffffff;
+  --ink:#444444;
+  --ink2:#888888;
+  --line-pink:#5ebb81;
+  --dark-pink:#5ebb81;
+  --accent:#5ebb81;
+  --pale:#d0f0e0;
+  --border:#4aaa70;
+  --bar-h:28px;
+}
+
+html{font-size:16px;scroll-behavior:smooth}
+
+body{
+  background-color:#ffffff;
+  background-image:
+    radial-gradient(circle, rgba(244,127,214,0.6) 1.5px, transparent 1.5px),
+    radial-gradient(circle, rgba(94,187,129,0.6) 1.5px, transparent 1.5px);
+  background-size:44px 22px, 44px 22px;
+  background-position:0 0, 22px 0;
+  color:var(--ink);
+  font-family:'Pretendard',sans-serif;
+  height:100vh;
+  overflow:hidden;
+}
+
+#scroll-wrap{
+  height:calc(100vh - var(--bar-h));
+  margin-top:var(--bar-h);
+  overflow-y:auto;overflow-x:hidden;
+}
+#scroll-wrap::-webkit-scrollbar{width:4px}
+#scroll-wrap::-webkit-scrollbar-track{background:transparent}
+#scroll-wrap::-webkit-scrollbar-thumb{background:#f47fd6;border-radius:4px}
+
+/* ── 핑크 별 커서 ── */
+body,#scroll-wrap{cursor:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'><path d='M12 2l2.4 7.4H22l-6 4.6 2.3 7-6.3-4.6L5.7 21 8 14l-6-4.6h7.6z' fill='%23f47fd6'/></svg>") 10 10,auto}
+a,button,select{cursor:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24'><path d='M12 2l2.4 7.4H22l-6 4.6 2.3 7-6.3-4.6L5.7 21 8 14l-6-4.6h7.6z' fill='%23f47fd6'/></svg>") 9 9,pointer}
+
+/* ── 별가루 파티클 ── */
+.sparkle{position:fixed;pointer-events:none;z-index:99999;animation:sparkleFade .65s ease-out forwards}
+@keyframes sparkleFade{
+  0%{opacity:1;transform:translate(0,0) scale(1) rotate(0deg)}
+  100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0) rotate(var(--r))}
+}
+
+/* ── 커서 파티클 ── */
+.cursor-particle{
+  position:fixed;
+  pointer-events:none;
+  z-index:99999;
+  font-size:clamp(12px,2vw,18px);
+  color:#f47fd6;
+  animation:particleFade .8s ease-out forwards;
+  transform-origin:center;
+}
+@keyframes particleFade{
+  0%{opacity:1;transform:translate(0,0) scale(1);}
+  100%{opacity:0;transform:translate(calc((var(--rx,0))*30px), -40px) scale(.3);}
+}
+
+/* ── STATUS BAR (heevtoday + 시:분만) ── */
+.status-bar{
+  position:fixed;top:0;left:0;right:0;z-index:9999;
+  height:var(--bar-h);
+  background:#ffffff;
+  border-bottom:1px solid #e0e0e0;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:0 14px;font-size:11px;
+}
+.bar-logo{font-weight:800;font-size:12px;color:#5ebb81;letter-spacing:.02em}
+.bar-clock{font-weight:700;font-size:11px;color:#5ebb81;letter-spacing:.08em}
+
+/* ── 헤더 ── */
+.hero-header{
+  background:#f47fd6;
+  padding:1.8rem 1.2rem 1.4rem;
+  position:relative;overflow:hidden;
+}
+.hh-star{display:none;}
+
+.hh-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.4rem}
+.hh-back{color:rgba(255,255,255,.9);background:none;border:none;padding:0;display:flex;align-items:center}
+.hh-actions{display:flex;gap:14px}
+.hh-actions button{background:none;border:none;color:rgba(255,255,255,.9);padding:0;display:flex;align-items:center}
+
+.hh-title{
+  font-weight:800;font-size:2.8rem;letter-spacing:-.03em;
+  color:#ffffff;line-height:1.1;margin-bottom:.65rem;
+}
+
+/* 타이핑 텍스트 */
+.hh-typing{
+  font-size:13px;line-height:1.75;color:#ffffff;
+  font-weight:600;margin-bottom:1rem;min-height:44px;
+}
+.hh-typing #typing-line-1{display:block}
+.hh-typing #typing-line-2{display:block}
+
+/* 태그 */
+.tag{
+  display:inline-block;
+  background:rgba(255,255,255,.12);
+  color:#fff;
+  font-size:10px;font-weight:700;
+  padding:3px 10px;border-radius:0;
+  margin:2px 2px 2px 0;
+  letter-spacing:.03em;
+}
+
+/* 바로가기 select들 */
+
+/* BGM 플레이어 */
+.bgm-player{
+  display:flex;align-items:center;gap:.55rem;
+  background:rgba(255,255,255,.15);
+  border:1px solid rgba(255,255,255,.3);
+  border-radius:0;
+  padding:.35rem .85rem .35rem .5rem;
+  margin-top:1rem;
+  max-width:320px;
+  backdrop-filter:blur(4px);
+}
+.bgm-disc{
+  width:26px;height:26px;border-radius:0;
+  background:rgba(255,255,255,.2);
+  border:1.5px solid rgba(255,255,255,.4);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;font-size:12px;
+  transition:transform .1s;
+}
+.bgm-disc.spinning{animation:discSpin 2s linear infinite}
+@keyframes discSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.bgm-marquee-wrap{flex:1;overflow:hidden}
+.bgm-marquee-wrap marquee{font-size:11px;color:rgba(255,255,255,.85);font-weight:500;width:100%}
+.bgm-btn{
+  background:rgba(255,255,255,.25);border:none;
+  width:22px;height:22px;border-radius:0;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:background .15s;
+}
+.bgm-btn:hover{background:rgba(255,255,255,.4)}
+
+
+
+
+
+
+
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.hero-header{animation:fadeUp .4s ease both}
+
+
+
+/* ── hh pill 카드 ── */
+.hh-link-pills{display:flex;gap:.6rem;margin-top:.9rem;flex-wrap:wrap}
+.hh-pill-card{
+  display:inline-flex;align-items:center;gap:.4rem;
+  background:transparent;
+  border:1.5px solid rgba(255,255,255,.6);
+  color:#fff;font-size:12px;font-weight:700;
+  padding:.42rem 1.2rem;border-radius:0;
+  text-decoration:none;letter-spacing:.03em;
+  transition:background .15s;
+}
+.hh-pill-card:hover{background:rgba(255,255,255,.4)}
+
+
+
+
+
+
+
+  .month-item{position:static!important;width:70%!important}
+}
+
+
+
+
+
+/* ── 레트로 터미널 About ── */
+
+
+/* 2x2 그리드 박스 */
+
+
+
+
+
+
+/* 상단 nav 바 */
+.rt-nav{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:11px;letter-spacing:.08em;
+  border-bottom:1.5px solid #f47fd6;
+  padding-bottom:.5rem;margin-bottom:1.8rem;
+}
+
+/* 제목 행 */
+.rt-title-row{
+  font-size:13px;letter-spacing:.3em;
+  margin-bottom:1.4rem;
+  display:flex;gap:2rem;
+}
+
+/* 하이라이트 블록 */
+
+
+/* 링크 */
+
+.rt-link:hover{opacity:.7;}
+.rt-link.disabled{opacity:.35;pointer-events:none;}
+
+/* 구분선 */
+
+
+/* 라벨 */
+
+
+/* 본문 */
+
+
+/* ── 타이포 About 섹션 ── */
+.tp-wrap{
+  max-width:860px;margin:0 auto;
+  padding:1.5rem 1.1rem 1rem;
+  font-family:'Pretendard',sans-serif;
+}
+
+.tp-line{
+  font-size:clamp(1.1rem,5vw,2.6rem);
+  font-weight:900;
+  color:#f47fd6;
+  line-height:1.25;
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:.3rem .5rem;
+  margin-bottom:.1rem;
+  letter-spacing:-.02em;
+}
+
+/* 이탤릭 강조 */
+.tp-it{font-style:italic;color:#f47fd6;}
+
+/* 인라인 이모지 박스 */
+.tp-emoji{
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:clamp(1rem,3vw,1.8rem);
+  background:#f0f0f0;
+  border-radius:4px;
+  padding:.05em .2em;
+  line-height:1;
+  vertical-align:middle;
+}
+
+/* 화살표 */
+.tp-arrow{
+  color:#f47fd6;
+  font-size:clamp(1.2rem,3.5vw,2.2rem);
+  font-weight:300;
+  vertical-align:middle;
+}
+
+/* 작은 수퍼스크립트 번호 */
+.tp-sup{
+  font-size:.45em;
+  vertical-align:super;
+  opacity:.5;
+  font-weight:700;
+  letter-spacing:.05em;
+}
+
+/* 민트 포인트 */
+.tp-mint{color:#5ebb81;}
+
+/* 하단 작은 크레딧 */
+.tp-credit{
+  font-size:9px;color:#bbb;
+  letter-spacing:.04em;
+  line-height:1.8;
+  margin-top:1.2rem;
+  border-top:1px solid #eee;
+  padding-top:.7rem;
+  font-family:'Courier New',monospace;
+}
+
+/* ── 타이포 About 섹션 ── */
+.tp-wrap{
+  max-width:860px;margin:0 auto;
+  padding:1.5rem 1.1rem 1rem;
+  font-family:'Pretendard',sans-serif;
+}
+
+/* ── 타이포 라인 애니메이션 ── */
+@keyframes slideUp{
+  from{opacity:0;transform:translateY(28px);}
+  to{opacity:1;transform:translateY(0);}
+}
+.tp-line{
+  font-size:clamp(1.1rem,5vw,2.6rem);
+  font-weight:900;
+  color:#f47fd6;
+  line-height:1.25;
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:.3rem .5rem;
+  margin-bottom:.6rem;
+  letter-spacing:-.02em;
+  opacity:0;
+  animation:slideUp .6s cubic-bezier(.22,.68,0,1.2) forwards;
+  cursor:default;
+  transition:transform .2s cubic-bezier(.22,.68,0,1.2), opacity .2s;
+}
+.tp-line:hover{
+  transform:translateY(-4px);
+  opacity:.85;
+}
+/* 각 라인 딜레이 */
+.tp-line:nth-child(1){animation-delay:.05s;}
+.tp-line:nth-child(2){animation-delay:.15s;}
+.tp-line:nth-child(3){animation-delay:.25s;}
+.tp-line:nth-child(4){animation-delay:.35s;}
+.tp-line:nth-child(5){animation-delay:.45s;}
+.tp-line:nth-child(6){animation-delay:.55s;}
+.tp-line:nth-child(7){animation-delay:.65s;}
+.tp-line:nth-child(8){animation-delay:.75s;}
+.tp-line:nth-child(9){animation-delay:.85s;}
+
+.tp-it{font-style:italic;}
+.tp-emoji{
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:clamp(.9rem,2.5vw,1.6rem);
+  background:#f5f5f5;border-radius:4px;
+  padding:.05em .2em;line-height:1;vertical-align:middle;
+}
+.tp-arrow{font-weight:300;vertical-align:middle;opacity:.6;}
+.tp-sup{font-size:.4em;vertical-align:super;opacity:.45;font-weight:700;}
+.tp-mint{color:#5ebb81;}
+.tp-credit{
+  font-size:9px;color:#bbb;letter-spacing:.04em;line-height:1.8;
+  margin-top:1.2rem;border-top:1px solid #eee;padding-top:.7rem;
+  font-family:'Courier New',monospace;
+}
+
+
+/* ── 모바일 대응 ── */
+@media(max-width:480px){
+  .hh-title{font-size:2rem;}
+  .tp-line{font-size:3.8vw;gap:.15rem .25rem;margin-bottom:.45rem;}
+  .tp-emoji{font-size:3.2vw;padding:.03em .15em;}
+  .tp-sup{font-size:.35em;}
+  .tp-it{font-size:inherit;}
+  .bgm-player{max-width:100%;}
+  .hh-link-pills{gap:.4rem;}
+  .hh-pill-card{font-size:11px;padding:.38rem .9rem;}
+  .tp-wrap{padding:1.2rem .9rem 1rem;}
+}
+</style>
+</head>
+<body>
+
+<!-- STATUS BAR: heevtoday + 시:분 -->
+<div class="status-bar">
+  <span class="bar-logo">heev.</span>
+  <span class="bar-clock" id="bar-clock"></span>
+</div>
+
+<div id="scroll-wrap">
+
+  <!-- ── 헤더 ── -->
+  <div class="hero-header">
+    <!-- 배경 별 -->
+    <span class="hh-star" style="top:10%;left:7%;--hsz:22px;--hdur:5s;--hdel:0s">★</span>
+    <span class="hh-star" style="top:18%;right:9%;--hsz:14px;--hdur:4s;--hdel:.8s">✦</span>
+    <span class="hh-star" style="bottom:20%;left:14%;--hsz:16px;--hdur:6s;--hdel:1.2s">☆</span>
+    <span class="hh-star" style="bottom:28%;right:7%;--hsz:12px;--hdur:3.5s;--hdel:.4s">✧</span>
+    <span class="hh-star" style="top:52%;left:2%;--hsz:10px;--hdur:4.5s;--hdel:2s">★</span>
+    <span class="hh-star" style="top:33%;right:2%;--hsz:18px;--hdur:5.5s;--hdel:1.5s">✦</span>
+
+    <!-- 뒤로 / 즐겨찾기 / 공유 -->
+    <div class="hh-nav">
+      <button class="hh-back"><i data-lucide="chevron-left" style="width:22px;height:22px;color:#fff"></i></button>
+      <div class="hh-actions">
+        <button><i data-lucide="star" style="width:20px;height:20px;color:#fff"></i></button>
+        <button><i data-lucide="share" style="width:20px;height:20px;color:#fff"></i></button>
+      </div>
+    </div>
+
+    <!-- 제목: heevtoday ˙⋆✮ -->
+    <h1 class="hh-title">heevtoday ˙⋆✮</h1>
+
+    <!-- 타이핑 텍스트 -->
+    <div class="hh-typing">
+      <span id="typing-line-1"></span>
+      <span id="typing-line-2"></span>
+    </div>
+
+    <!-- 핑크 태그들 -->
+    <div style="margin-bottom:.75rem">
+      <span class="tag">#24/7 bluelady</span>
+      <span class="tag">#일상</span>
+      <span class="tag">#집꾸미기</span>
+      <span class="tag">#생산성</span>
+    </div>
+
+    <!-- BGM 플레이어 -->
+    <div class="bgm-player">
+      <div class="bgm-disc" id="bgm-disc">🎧</div>
+      <div class="bgm-marquee-wrap">
+        <marquee scrollamount="2" id="bgm-marquee">your song here 🎵</marquee>
+      </div>
+      <button class="bgm-btn" id="bgm-btn">
+        <i data-lucide="play" id="bgm-icon" style="width:11px;height:11px;color:#fff"></i>
+      </button>
+    </div>
+    <audio id="bgm-audio" loop preload="auto"></audio>
+
+    <!-- 바로가기 pill 카드 -->
+    <div class="hh-link-pills">
+      <a class="hh-pill-card" href="https://x.com/heevtoday" target="_blank">🔗 twitter</a>
+      <a class="hh-pill-card" href="#" style="opacity:.5;pointer-events:none;">🔗 Notion</a>
+    </div>
+  </div>
+
+  <!-- ── 본문 ── -->
+  <div class="page" id="main-content">
+
+  </div>
+
+
+  <!-- ── 타이포 About 섹션 ── -->
+  <div class="tp-wrap">
+
+    <div class="tp-line">
+      <span class="tp-it">HEEV</span>
+      archive
+      <span class="tp-emoji">🩷</span>
+    </div>
+
+    <div class="tp-line" style="font-size:clamp(1rem,3vw,1.6rem);opacity:.5;margin-bottom:.6rem;font-weight:700;letter-spacing:.14em;">
+      ABOUT
+    </div>
+
+    <div class="tp-line">
+      생산성<span class="tp-sup">01</span>
+      <span class="tp-emoji">🗂️</span>
+      <a href="https://x.com/heevtoday/status/2044735806775111872?s=20" target="_blank" style="color:#f47fd6;text-decoration:underline;font-weight:900;">노션 템플릿</a>
+      <span class="tp-mint">&amp;</span>
+      <a href="https://xsalary-calc-uh8z.vercel.app/" target="_blank" style="color:#f47fd6;text-decoration:underline;font-weight:900;">주급계산기</a>
+      <span class="tp-emoji">💰</span>
+    </div>
+
+    <div class="tp-line">
+      집꾸미기<span class="tp-sup">02</span>
+      <span class="tp-emoji">🛋️</span>
+      제품 정보
+      <span class="tp-mint">&amp;</span>
+      인테리어
+      <span class="tp-emoji">🪴</span>
+    </div>
+
+    <div class="tp-line">
+      링크<span class="tp-sup">03</span>
+      <span class="tp-emoji">📨</span>
+      <a href="https://x.com/heevtoday" target="_blank" style="color:#5ebb81;text-decoration:underline;font-weight:900;">Twitter</a>
+      <span class="tp-mint">·</span>
+      <a href="https://ozip.me/Ed3UoRd?af" target="_blank" style="color:#5ebb81;text-decoration:underline;font-weight:900;">heev.zip</a>
+      <span class="tp-emoji">🏡</span>
+    </div>
+
+    <div class="tp-line">
+      <span class="tp-it">24/7 bluelady</span>
+    </div>
+
+    <div class="tp-line">
+      <span class="tp-emoji">📮</span>
+      <a href="https://open.kakao.com/o/s0yrN0ri" target="_blank" style="color:#f47fd6;text-decoration:underline;font-weight:900;">주급 계산기 개발폼</a>
+      <span class="tp-mint">·</span>
+      <a href="https://forms.gle/kvqoX7BDqSTaZBwE7" target="_blank" style="color:#5ebb81;text-decoration:underline;font-weight:900;">블루레이디 질문폼</a>
+    </div>
+
+
+
+  </div>
+
+
+
+
+</div>
+
+<script>
+// lucide 안전하게 실행
+try{ lucide.createIcons(); }catch(e){}
+
+// ── 🍧 파비콘 흐렸다 밝아지는 효과 ──
+(function(){
+  const favCanvas = document.createElement('canvas');
+  favCanvas.width = favCanvas.height = 64;
+  const favCtx = favCanvas.getContext('2d');
+  const fav = document.getElementById('favicon');
+  let favAlpha = 0, favDir = 1;
+
+  function drawFavicon(){
+    favCtx.clearRect(0,0,64,64);
+    favCtx.globalAlpha = 0.2 + favAlpha * 0.8;
+    favCtx.font = '52px serif';
+    favCtx.fillText('🍏', 4, 52);
+    fav.href = favCanvas.toDataURL();
+    favAlpha += favDir * 0.025;
+    if(favAlpha >= 1){ favAlpha=1; favDir=-1; }
+    if(favAlpha <= 0){ favAlpha=0; favDir=1; }
+    requestAnimationFrame(drawFavicon);
+  }
+  drawFavicon();
+})();
+
+// ── 별 뿌리기 ──
+function spawnStars(id, n, cls, color){
+  const el=document.getElementById(id); if(!el) return;
+  const shapes=['★','✦','☆','✧','✩','⭑'];
+  for(let i=0;i<n;i++){
+    const s=document.createElement('span');
+    s.className=cls; s.textContent=shapes[Math.floor(Math.random()*shapes.length)];
+    const sz=Math.floor(Math.random()*12+7);
+    const op=(Math.random()*.5+.25).toFixed(2);
+    const dur=(Math.random()*3+2).toFixed(1);
+    const del=(Math.random()*3).toFixed(1);
+    const c=Math.random()<.15?'#c8a84b':color;
+    s.style.cssText=`left:${Math.random()*88+2}%;top:${Math.random()*80+8}%;font-size:${sz}px;--sz:${sz}px;--op:${op};--dur:${dur}s;--del:${del}s;color:${c}`;
+    el.appendChild(s);
+  }
+}
+
+
+
+
+
+// ── 커서 파티클 ──
+const particleShapes = ['🩷','✦','★','✿','♡','🌸','⭑'];
+let particleThrottle = 0;
+document.addEventListener('mousemove', (e) => {
+  const now = Date.now();
+  if (now - particleThrottle < 50) return;
+  particleThrottle = now;
+  const p = document.createElement('div');
+  p.className = 'cursor-particle';
+  p.innerHTML = particleShapes[Math.floor(Math.random() * particleShapes.length)];
+  p.style.cssText = `left:${e.clientX}px;top:${e.clientY}px;`;
+  document.body.appendChild(p);
+  setTimeout(() => p.remove(), 800);
+});
+
+// 터치 파티클 (모바일)
+document.addEventListener('touchmove', (e) => {
+  const now = Date.now();
+  if (now - particleThrottle < 80) return;
+  particleThrottle = now;
+  const touch = e.touches[0];
+  const p = document.createElement('div');
+  p.className = 'cursor-particle';
+  p.innerHTML = particleShapes[Math.floor(Math.random() * particleShapes.length)];
+  p.style.cssText = `left:${touch.clientX}px;top:${touch.clientY}px;`;
+  document.body.appendChild(p);
+  setTimeout(() => p.remove(), 800);
+});
+
+function typeText(elId,text,delay,cb){
+  var el=document.getElementById(elId);if(!el){if(cb)cb();return;}
+  var chars=[...text]; // 이모지 포함 유니코드 안전 split
+  var i=0;
+  function next(){
+    if(i<chars.length){el.innerHTML+=chars[i++];setTimeout(next,65);}
+    else{if(cb)setTimeout(cb,180);}
+  }
+  setTimeout(next,delay);
+}
+typeText('typing-line-1','i ♥🏠',300,function(){typeText('typing-line-2','heev mood <3 <3 <3',0,null);});
+
+// ── BGM 플레이어 ──
+let bgmPlaying=false;
+const audio=document.getElementById('bgm-audio');
+const disc=document.getElementById('bgm-disc');
+const btn=document.getElementById('bgm-btn');
+const icon=document.getElementById('bgm-icon');
+btn.addEventListener('click',()=>{
+  if(!audio.src || audio.src===window.location.href){
+    alert('BGM 파일을 bgm-audio의 src에 연결해 주세요!'); return;
+  }
+  if(bgmPlaying){
+    audio.pause(); disc.classList.remove('spinning');
+    icon.setAttribute('data-lucide','play');
+  } else {
+    audio.play().catch(()=>{});
+    disc.classList.add('spinning');
+    icon.setAttribute('data-lucide','pause');
+  }
+  bgmPlaying=!bgmPlaying;
+  lucide.createIcons();
+});
+
+// ── 시계: 시:분 ──
+function tick(){
+  const n=new Date();
+  const t=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+  var bc=document.getElementById('bar-clock');if(bc)bc.textContent=t;
+  var fc=document.getElementById('ft-clock');if(fc)fc.textContent=t;
+}
+setInterval(tick,1000); tick();
+</script>
+</body>
+</html>
